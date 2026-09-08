@@ -10,23 +10,29 @@
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #121519; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
+    /* Barra superior */
     .top-bar {
       position: absolute; top: 16px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.90); backdrop-filter: blur(8px);
       padding: 10px 18px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #f0f3f6; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      color: #f0f3f6; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
     .top-bar h1 {
-      margin: 0 6px 0 0; font-size: 15px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #58a6ff;
+      margin: 0 6px 0 0; font-size: 14px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #58a6ff;
     }
     .nav-btn {
       background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #e6edf3; padding: 6px 12px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+      color: #e6edf3; padding: 6px 11px; border-radius: 5px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
     }
     .nav-btn:hover { background: #1f6feb; border-color: #58a6ff; }
+    .nav-btn-pin { background: rgba(255, 0, 85, 0.20); border-color: #ff0055; color: #ff7b9e; font-weight: 600; }
+    .nav-btn-pin:hover { background: #ff0055; color: #fff; }
     .nav-btn.active-measure { background: #238636; border-color: #2ea043; color: #fff; }
     .nav-btn.active-slope { background: #d29922; border-color: #e3b341; color: #000; font-weight: 700; }
+    .nav-btn-export { background: rgba(35, 134, 54, 0.25); border-color: #2ea043; color: #7ee787; }
+    .nav-btn-export:hover { background: #238636; color: #fff; }
 
+    /* Brújula dinámica grande (120px) */
     .compass-card {
       position: absolute; top: 16px; right: 16px; z-index: 10;
       width: 120px; height: 120px;
@@ -39,10 +45,11 @@
     .compass-card:hover { border-color: #58a6ff; transform: scale(1.04); }
     .compass-svg { width: 80px; height: 80px; transform-origin: 50% 50%; will-change: transform; }
 
+    /* Paneles de datos */
     .info-panel {
       position: absolute; top: 72px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.95); backdrop-filter: blur(8px);
-      padding: 14px 18px; border-radius: 8px; font-size: 12px; display: none; min-width: 230px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      padding: 14px 18px; border-radius: 8px; font-size: 12px; display: none; min-width: 240px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
     }
     .panel-measure { border: 1px solid #58a6ff; }
     .panel-slope { border: 1px solid #d29922; }
@@ -54,7 +61,7 @@
     .val-measure { color: #7ee787; }
     .val-slope { color: #f0883e; }
 
-    /* Panel de Coordenadas Métricas Locales */
+    /* Panel de coordenadas en vivo */
     .coords-card {
       position: absolute; bottom: 20px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.90); backdrop-filter: blur(8px);
@@ -77,9 +84,12 @@
     <h1 id="projectTitle">CARGANDO...</h1>
     <button class="nav-btn" onclick="topView()">Planta (2D)</button>
     <button class="nav-btn" onclick="perspectiveView()">Perspectiva 3D</button>
+    <button class="nav-btn nav-btn-pin" onclick="zoomToControl()">📍 Ver Control</button>
     <button class="nav-btn" id="measureBtn" onclick="toggleMode('measure')">📏 Medir</button>
     <button class="nav-btn" id="slopeBtn" onclick="toggleMode('slope')">📐 Talud</button>
-    <button class="nav-btn" id="clearBtn" style="display: none;" onclick="clearAll()">Borrar</button>
+    <button class="nav-btn nav-btn-export" id="exportBtn" onclick="exportToCSV()">📥 Exportar CSV (<span id="recCount">0</span>)</button>
+    <button class="nav-btn" id="clearBtn" style="display: none;" onclick="clearActiveMeasurement()">Borrar Línea</button>
+    <button class="nav-btn" id="resetStorageBtn" onclick="clearAllHistory()" title="Borra el registro acumulado">Limpiar Historial</button>
   </div>
 
   <div class="compass-card" id="compassBtn" title="Clic para orientar al Norte" onclick="orientToNorth()">
@@ -123,14 +133,9 @@
     // =========================================================================
     // 1. CONFIGURACIÓN PRINCIPAL
     // =========================================================================
-    const CESIUM_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjlnWjh5WnZVbTRSZ2s5eGUiLCJqdGkiOiI0NzQyZDU1ZS1lNzcwLTQ1OTEtYmVkMS1hYWFkYzJjNTRjYzYiLCJpZCI6NDc3MzE0LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODgxOTYzMzR9.d7HeXTwGpKuVONPPBcghXZlISjckj1wtQnxBnAMTi9M";
+    const CESIUM_TOKEN = "PEGA_AQUI_TU_TOKEN";
+    const ZONA_ACTIVA = "FILOS"; // "BERMEJAL_GUADALUPE" | "FILOS" | "PADS"
 
-    // Opciones: "BERMEJAL_GUADALUPE" | "FILOS" | "PADS"
-    const ZONA_ACTIVA = "FILOS";
-
-    // =========================================================================
-    // 2. PARÁMETROS GEODÉSICOS VINCULADOS A MINEPLAN
-    // =========================================================================
     const CONFIG_ZONAS = {
       "BERMEJAL_GUADALUPE": {
         nombre: "TAJO BERMEJAL - GUADALUPE",
@@ -138,14 +143,16 @@
         lat0: 17.8579401103632,
         lon0: -99.6739536626923,
         offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
+        rvec: [0.00011132995333956913, -0.00003292231694213758, -0.00043669032632740194],
         scale: 1.0002526469530397
       },
       "FILOS": {
         nombre: "TAJO LOS FILOS",
-        assetId: 5837979,
+        assetId: 0000000,
         lat0: 17.8579401103632,
         lon0: -99.6739536626923,
         offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
+        rvec: [0.00011132995333956913, -0.00003292231694213758, -0.00043669032632740194],
         scale: 1.0002526469530397
       },
       "PADS": {
@@ -154,6 +161,7 @@
         lat0: 17.8641030711538,
         lon0: -99.6942028892308,
         offset: [426491.06053362874, 1975081.382389519, 3.8771747150963165],
+        rvec: [0.00009673884755205756, 0.0000010868499923518604, -0.0005409057326296537],
         scale: 1.000261022361419
       }
     };
@@ -166,15 +174,9 @@
     Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
-      timeline: false,
-      animation: false,
-      baseLayerPicker: false,
-      geocoder: false,
-      homeButton: false,
-      sceneModePicker: false,
-      navigationHelpButton: false,
-      infoBox: false,
-      selectionIndicator: false
+      timeline: false, animation: false, baseLayerPicker: false,
+      geocoder: false, homeButton: false, sceneModePicker: false,
+      navigationHelpButton: false, infoBox: false, selectionIndicator: false
     });
 
     viewer.scene.globe.show = false;
@@ -185,15 +187,12 @@
     viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#121519');
 
     let currentTileset = null;
-
     Cesium.Cesium3DTileset.fromIonAssetId(activeZone.assetId, {
       maximumScreenSpaceError: 2
     }).then(function(tileset) {
       currentTileset = tileset;
       viewer.scene.primitives.add(tileset);
       perspectiveView();
-    }).catch(function(error) {
-      console.log('Error al cargar la malla:', error);
     });
 
     function topView() {
@@ -222,7 +221,7 @@
     }
 
     // =========================================================================
-    // PROYECCIÓN DIRECTA HACIA LA CUADRÍCULA DE MINEPLAN
+    // 2. MOTOR GEODÉSICO DIRECTO: WGS84 -> LOCAL DE MINA
     // =========================================================================
     function getMinePlanCoordinates(cartographic, zone) {
       const a = 6378137.0;
@@ -255,26 +254,129 @@
 
       const xTM = N * (A + (1 - T + C) * Math.pow(A, 3) / 6);
       const yTM = (M - M0) + N * tanLat * (A * A / 2 + (5 - T + 9 * C) * Math.pow(A, 4) / 24);
+      const zTM = cartographic.height;
 
-      // Aplicar factor de escala y traslación directa al marco local de mina
-      const localEasting = zone.scale * xTM + zone.offset[0];
-      const localNorthing = zone.scale * yTM + zone.offset[1];
-      const localElevation = cartographic.height;
+      const s = zone.scale;
+      const r = zone.rvec;
+      const off = zone.offset;
+
+      const localEasting   = s * (xTM - r[2] * yTM + r[1] * zTM) + off[0];
+      const localNorthing  = s * (r[2] * xTM + yTM - r[0] * zTM) + off[1];
+      const localElevation = s * (-r[1] * xTM + r[0] * yTM + zTM) + off[2];
 
       return {
+        rawE: localEasting,
+        rawN: localNorthing,
+        rawZ: localElevation,
         e: localEasting.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         n: localNorthing.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         z: localElevation.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       };
     }
 
+    // =========================================================================
+    // 3. MOTOR GEODÉSICO INVERSO: LOCAL DE MINA -> CARTESIAN3
+    // =========================================================================
+    function minePlanToCartesian(targetE, targetN, targetZ, zone) {
+      const s = zone.scale;
+      const r = zone.rvec;
+      const off = zone.offset;
+
+      const vx = (targetE - off[0]) / s;
+      const vy = (targetN - off[1]) / s;
+      const vz = (targetZ - off[2]) / s;
+
+      const xTM = vx + r[2] * vy - r[1] * vz;
+      const yTM = -r[2] * vx + vy + r[0] * vz;
+      const zTM = r[1] * vx - r[0] * vy + vz;
+
+      const a = 6378137.0;
+      const f = 1 / 298.257223563;
+      const e2 = 2 * f - f * f;
+      const e_prime2 = e2 / (1 - e2);
+
+      const lat0 = Cesium.Math.toRadians(zone.lat0);
+      const lon0 = Cesium.Math.toRadians(zone.lon0);
+
+      const m0 = 1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256;
+      const m1 = 3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * Math.pow(e2, 3) / 1024;
+      const m2 = 15 * e2 * e2 / 256 + 45 * Math.pow(e2, 3) / 1024;
+      const m3 = 35 * Math.pow(e2, 3) / 3072;
+
+      const M0 = a * (m0 * lat0 - m1 * Math.sin(2 * lat0) + m2 * Math.sin(4 * lat0) - m3 * Math.sin(6 * lat0));
+      const M = M0 + yTM;
+
+      const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+      const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256));
+
+      const phi1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu)
+                      + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu)
+                      + (151 * Math.pow(e1, 3) / 96) * Math.sin(6 * mu);
+
+      const N1 = a / Math.sqrt(1 - e2 * Math.sin(phi1) * Math.sin(phi1));
+      const T1 = Math.tan(phi1) * Math.tan(phi1);
+      const C1 = e_prime2 * Math.cos(phi1) * Math.cos(phi1);
+      const R1 = a * (1 - e2) / Math.pow(1 - e2 * Math.sin(phi1) * Math.sin(phi1), 1.5);
+      const D = xTM / N1;
+
+      const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * e_prime2) * Math.pow(D, 4) / 24);
+      const lon = lon0 + (D - (1 + 2 * T1 + C1) * Math.pow(D, 3) / 6) / Math.cos(phi1);
+
+      return Cesium.Cartesian3.fromRadians(lon, lat, zTM);
+    }
+
+    // =========================================================================
+    // INYECCIÓN DE PUNTO DE CONTROL (MINEPLAN)
+    // =========================================================================
+    let controlPointEntity = null;
+
+    function addControlPin(targetE, targetN, targetZ, label) {
+      const position = minePlanToCartesian(targetE, targetN, targetZ, activeZone);
+
+      controlPointEntity = viewer.entities.add({
+        name: label,
+        position: position,
+        point: {
+          pixelSize: 14,
+          color: Cesium.Color.fromCssColorString('#ff0055'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 3,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        },
+        label: {
+          text: `${label}\nE: ${targetE.toFixed(2)}  N: ${targetN.toFixed(2)}  Z: ${targetZ.toFixed(2)}`,
+          font: '12px monospace',
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          fillColor: Cesium.Color.YELLOW,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 3,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -16),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY
+        }
+      });
+    }
+
+    // Coordenadas exactas proporcionadas desde MinePlan
+    addControlPin(428273.91, 1978420.47, 1415.03, "CONTROL MINEPLAN");
+
+    // Función del botón para volar directo al marcador de control
+    function zoomToControl() {
+      if (controlPointEntity) {
+        viewer.flyTo(controlPointEntity, {
+          offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-45), 80),
+          duration: 1.5
+        });
+      }
+    }
+
+    // Inspección en tiempo real de coordenadas
     const coordsHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     coordsHandler.setInputAction(function(movement) {
       const pickedPosition = viewer.scene.pickPosition(movement.endPosition);
       if (Cesium.defined(pickedPosition)) {
         const cartographic = Cesium.Cartographic.fromCartesian(pickedPosition);
         const coords = getMinePlanCoordinates(cartographic, activeZone);
-
         document.getElementById('localX').innerText = coords.e;
         document.getElementById('localY').innerText = coords.n;
         document.getElementById('localZ').innerText = coords.z;
@@ -282,7 +384,45 @@
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
     // =========================================================================
-    // HERRAMIENTAS DE MEDICIÓN Y TALUD
+    // 4. GESTOR DE HISTORIAL PERSISTENTE (LOCALSTORAGE)
+    // =========================================================================
+    const STORAGE_KEY = "SURVEY_MEASUREMENTS_" + ZONA_ACTIVA;
+
+    function getHistory() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function saveHistory(list) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      } catch(e) {
+        console.error("No se pudo guardar en almacenamiento local", e);
+      }
+      updateHistoryBadge();
+    }
+
+    function updateHistoryBadge() {
+      const list = getHistory();
+      document.getElementById('recCount').innerText = list.length;
+    }
+
+    function clearAllHistory() {
+      if (confirm("¿Deseas vaciar todas las mediciones acumuladas de " + activeZone.nombre + "?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        updateHistoryBadge();
+        clearActiveMeasurement();
+      }
+    }
+
+    updateHistoryBadge();
+
+    // =========================================================================
+    // 5. HERRAMIENTAS DE MEDICIÓN Y TALUD
     // =========================================================================
     let currentMode = null;
     let toolPoints = [];
@@ -303,7 +443,7 @@
       const clearBtn = document.getElementById('clearBtn');
 
       if (currentMode === mode) {
-        clearAll();
+        clearActiveMeasurement();
         return;
       }
 
@@ -382,35 +522,68 @@
         const dist3D = Cesium.Cartesian3.distance(p1, p2);
         const distH = Math.sqrt(east * east + north * north);
 
+        const c1 = Cesium.Cartographic.fromCartesian(p1);
+        const c2 = Cesium.Cartographic.fromCartesian(p2);
+        const p1Local = getMinePlanCoordinates(c1, activeZone);
+        const p2Local = getMinePlanCoordinates(c2, activeZone);
+
+        const now = new Date();
+        const timestamp = now.getFullYear() + "-" +
+          String(now.getMonth() + 1).padStart(2, '0') + "-" +
+          String(now.getDate()).padStart(2, '0') + " " +
+          String(now.getHours()).padStart(2, '0') + ":" +
+          String(now.getMinutes()).padStart(2, '0') + ":" +
+          String(now.getSeconds()).padStart(2, '0');
+
+        let record = {
+          timestamp: timestamp,
+          zone: activeZone.nombre,
+          type: currentMode === 'measure' ? "MEDICION_3D" : "TALUD_ESTRUCTURAL",
+          p1_e: p1Local.rawE.toFixed(3),
+          p1_n: p1Local.rawN.toFixed(3),
+          p1_z: p1Local.rawZ.toFixed(3),
+          p2_e: p2Local.rawE.toFixed(3),
+          p2_n: p2Local.rawN.toFixed(3),
+          p2_z: p2Local.rawZ.toFixed(3),
+          dist3D: dist3D.toFixed(2),
+          distH: distH.toFixed(2),
+          deltaZ: deltaZ.toFixed(2),
+          slope: distH > 0 ? ((Math.abs(deltaZ) / distH) * 100).toFixed(1) : "0.0",
+          dip: (distH > 0 ? Cesium.Math.toDegrees(Math.atan(Math.abs(deltaZ) / distH)) : (Math.abs(deltaZ) > 0 ? 90.0 : 0.0)).toFixed(1),
+          azimuth: (function() {
+            let az = Cesium.Math.toDegrees(Math.atan2(east, north));
+            if (az < 0) az += 360;
+            return az.toFixed(1);
+          })()
+        };
+
         if (currentMode === 'measure') {
-          const slope = distH > 0 ? (Math.abs(deltaZ) / distH) * 100 : 0;
-          document.getElementById('mDist3D').innerText = dist3D.toFixed(2) + ' m';
-          document.getElementById('mDistH').innerText = distH.toFixed(2) + ' m';
-          document.getElementById('mDeltaZ').innerText = (deltaZ >= 0 ? '+' : '') + deltaZ.toFixed(2) + ' m';
-          document.getElementById('mSlope').innerText = slope.toFixed(1) + ' %';
+          document.getElementById('mDist3D').innerText = record.dist3D + ' m';
+          document.getElementById('mDistH').innerText = record.distH + ' m';
+          document.getElementById('mDeltaZ').innerText = (deltaZ >= 0 ? '+' : '') + record.deltaZ + ' m';
+          document.getElementById('mSlope').innerText = record.slope + ' %';
           activeBtn.innerText = '📏 Medir de nuevo';
           activeBtn.classList.remove('active-measure');
         } else if (currentMode === 'slope') {
-          const dip = distH > 0 ? Cesium.Math.toDegrees(Math.atan(Math.abs(deltaZ) / distH)) : (Math.abs(deltaZ) > 0 ? 90.0 : 0.0);
-          let azRad = Math.atan2(east, north);
-          let azimuth = Cesium.Math.toDegrees(azRad);
-          if (azimuth < 0) azimuth += 360;
-
-          document.getElementById('tDip').innerText = dip.toFixed(1) + '°';
-          document.getElementById('tAzimuth').innerText = azimuth.toFixed(1) + '°';
-          document.getElementById('tDeltaZ').innerText = (deltaZ >= 0 ? '+' : '') + deltaZ.toFixed(2) + ' m';
-          document.getElementById('tDistH').innerText = distH.toFixed(2) + ' m';
-          document.getElementById('tDist3D').innerText = dist3D.toFixed(2) + ' m';
+          document.getElementById('tDip').innerText = record.dip + '°';
+          document.getElementById('tAzimuth').innerText = record.azimuth + '°';
+          document.getElementById('tDeltaZ').innerText = (deltaZ >= 0 ? '+' : '') + record.deltaZ + ' m';
+          document.getElementById('tDistH').innerText = record.distH + ' m';
+          document.getElementById('tDist3D').innerText = record.dist3D + ' m';
           activeBtn.innerText = '📐 Analizar otro';
           activeBtn.classList.remove('active-slope');
         }
+
+        const history = getHistory();
+        history.push(record);
+        saveHistory(history);
 
         viewer.canvas.style.cursor = 'default';
         currentMode = null;
       }
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-    function clearAll() {
+    function clearActiveMeasurement() {
       resetGraphicsOnly();
       currentMode = null;
 
@@ -425,6 +598,67 @@
       document.getElementById('panelSlope').style.display = 'none';
       document.getElementById('clearBtn').style.display = 'none';
       viewer.canvas.style.cursor = 'default';
+    }
+
+    // =========================================================================
+    // 6. EXPORTADOR A EXCEL / CSV
+    // =========================================================================
+    function exportToCSV() {
+      const list = getHistory();
+      if (list.length === 0) {
+        alert("No hay mediciones acumuladas aún para exportar.");
+        return;
+      }
+
+      const headers = [
+        "ID",
+        "Fecha_Hora",
+        "Zona",
+        "Tipo_Analisis",
+        "P1_Este_X",
+        "P1_Norte_Y",
+        "P1_Cota_Z",
+        "P2_Este_X",
+        "P2_Norte_Y",
+        "P2_Cota_Z",
+        "Distancia_3D_m",
+        "Distancia_Horiz_m",
+        "Desnivel_DeltaZ_m",
+        "Pendiente_Pct",
+        "Inclinacion_Dip_Deg",
+        "Direccion_Azimut_Deg"
+      ];
+
+      const rows = list.map((item, idx) => [
+        idx + 1,
+        `"${item.timestamp}"`,
+        `"${item.zone}"`,
+        `"${item.type}"`,
+        item.p1_e,
+        item.p1_n,
+        item.p1_z,
+        item.p2_e,
+        item.p2_n,
+        item.p2_z,
+        item.dist3D,
+        item.distH,
+        item.deltaZ,
+        item.slope,
+        item.dip,
+        item.azimuth
+      ]);
+
+      const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeDate = new Date().toISOString().slice(0,10);
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Mediciones_${ZONA_ACTIVA}_${safeDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   </script>
 </body>
