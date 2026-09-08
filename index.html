@@ -137,45 +137,29 @@
     const ZONA_ACTIVA = "FILOS";
 
     // =========================================================================
-    // 2. CATÁLOGO BLINDADO DE PARÁMETROS GEODÉSICOS
+    // 2. CATÁLOGO DE ZONAS (CONFIGURA AQUÍ TUS ASSET IDS)
     // =========================================================================
     const CONFIG_ZONAS = {
       "BERMEJAL_GUADALUPE": {
         nombre: "TAJO BERMEJAL - GUADALUPE",
-        assetId: 0000000, // Pon aquí el Asset ID correspondiente
-        lat0: 17.8579401103632,
-        lon0: -99.6739536626923,
-        offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
-        rvec: [0.00011132995333956913, -0.00003292231694213758, -0.00043669032632740194],
-        scale: 1.0002526469530397
+        assetId: 0000000 // Tu Asset ID numérico aquí
       },
       "FILOS": {
         nombre: "TAJO LOS FILOS",
-        assetId: 5837979, // Pon aquí el Asset ID correspondiente
-        lat0: 17.8579401103632,
-        lon0: -99.6739536626923,
-        offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
-        rvec: [0.00011132995333956913, -0.00003292231694213758, -0.00043669032632740194],
-        scale: 1.0002526469530397
+        assetId: 5837979 // Tu Asset ID numérico aquí
       },
       "PADS": {
         nombre: "PADS DE LIXIVIACIÓN",
-        assetId: 0000000, // Pon aquí el Asset ID correspondiente
-        lat0: 17.8641030711538,
-        lon0: -99.6942028892308,
-        offset: [426491.06053362874, 1975081.382389519, 3.8771747150963165],
-        rvec: [0.00009673884755205756, 0.0000010868499923518604, -0.0005409057326296537],
-        scale: 1.000261022361419
+        assetId: 0000000 // Tu Asset ID numérico aquí
       }
     };
 
-    // Parámetros activos en sesión
     const activeZone = CONFIG_ZONAS[ZONA_ACTIVA];
     document.title = "Visor 3D - " + activeZone.nombre;
     document.getElementById('projectTitle').innerText = activeZone.nombre;
     document.getElementById('zoneTag').innerText = "SISTEMA LOCAL - " + activeZone.nombre;
 
-    // 1. CREDENCIALES CESIUM
+    // 1. INICIALIZACIÓN DE CESIUM
     Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
@@ -211,7 +195,7 @@
       console.log('Error al cargar la malla:', error);
     });
 
-    // 4. CÁMARAS
+    // 4. VISTAS DE CÁMARA
     function topView() {
       if (!currentTileset) return;
       viewer.zoomTo(currentTileset, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-89.9), 0));
@@ -238,71 +222,25 @@
       });
     }
 
-    // 6. MOTOR DE TRANSFORMACIÓN MATEMÁTICA A SISTEMA LOCAL
-    function toLocalCoordinates(cartographic, zone) {
-      const a = 6378137.0;
-      const f = 1 / 298.257223563;
-      const e2 = 2 * f - f * f;
-      const e_prime2 = e2 / (1 - e2);
-
-      const lat = cartographic.latitude;
-      const lon = cartographic.longitude;
-      const lat0 = Cesium.Math.toRadians(zone.lat0);
-      const lon0 = Cesium.Math.toRadians(zone.lon0);
-
-      // Proyección Transversa de Mercator (origen central)
-      const dLon = lon - lon0;
-      const sinLat = Math.sin(lat);
-      const cosLat = Math.cos(lat);
-      const tanLat = Math.tan(lat);
-
-      const N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
-      const T = tanLat * tanLat;
-      const C = e_prime2 * cosLat * cosLat;
-      const A = cosLat * dLon;
-
-      const m0 = 1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256;
-      const m1 = 3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * Math.pow(e2, 3) / 1024;
-      const m2 = 15 * e2 * e2 / 256 + 45 * Math.pow(e2, 3) / 1024;
-      const m3 = 35 * Math.pow(e2, 3) / 3072;
-
-      const M = a * (m0 * lat - m1 * Math.sin(2 * lat) + m2 * Math.sin(4 * lat) - m3 * Math.sin(6 * lat));
-      const M0 = a * (m0 * lat0 - m1 * Math.sin(2 * lat0) + m2 * Math.sin(4 * lat0) - m3 * Math.sin(6 * lat0));
-
-      const xTM = N * (A + (1 - T + C) * Math.pow(A, 3) / 6);
-      const yTM = (M - M0) + N * tanLat * (A * A / 2 + (5 - T + 9 * C) * Math.pow(A, 4) / 24);
-      const zTM = cartographic.height;
-
-      // Transformación de Similitud Sim(3): Escala + Rotación + Desplazamiento
-      const s = zone.scale;
-      const r = zone.rvec;
-      const off = zone.offset;
-
-      const localX = s * (xTM - r[2] * yTM + r[1] * zTM) + off[0];
-      const localY = s * (r[2] * xTM + yTM - r[0] * zTM) + off[1];
-      const localZ = cartographic.height; // Conserva la cota del levantamiento
-
-      return {
-        x: localX.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        y: localY.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-        z: localZ.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-      };
-    }
-
-    // Inspección de coordenadas métricas bajo el cursor
+    // 6. LECTURA DIRECTA DE COORDENADAS LOCALES NATIVAS (SIN DOBLE TRANSFORMACIÓN)
     const coordsHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     coordsHandler.setInputAction(function(movement) {
+      if (!currentTileset) return;
+
       const pickedPosition = viewer.scene.pickPosition(movement.endPosition);
       if (Cesium.defined(pickedPosition)) {
-        const cartographic = Cesium.Cartographic.fromCartesian(pickedPosition);
-        const local = toLocalCoordinates(cartographic, activeZone);
-        document.getElementById('localX').innerText = local.x;
-        document.getElementById('localY').innerText = local.y;
-        document.getElementById('localZ').innerText = local.z;
+        // Extrae las coordenadas locales directamente de la matriz de la malla de Terra
+        const transform = currentTileset.root.transform;
+        const invTransform = Cesium.Matrix4.inverse(transform, new Cesium.Matrix4());
+        const localPos = Cesium.Matrix4.multiplyByPoint(invTransform, pickedPosition, new Cesium.Cartesian3());
+
+        document.getElementById('localX').innerText = localPos.x.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('localY').innerText = localPos.y.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('localZ').innerText = localPos.z.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-    // 7. HERRAMIENTAS SEPARADAS (MEDICIÓN Y TALUD)
+    // 7. HERRAMIENTAS INDEPENDIENTES (MEDICIÓN Y ANÁLISIS DE TALUD)
     let currentMode = null;
     let toolPoints = [];
     let toolEntities = [];
