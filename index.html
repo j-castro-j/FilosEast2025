@@ -10,7 +10,6 @@
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #121519; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Barra superior */
     .top-bar {
       position: absolute; top: 16px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.90); backdrop-filter: blur(8px);
@@ -28,7 +27,6 @@
     .nav-btn.active-measure { background: #238636; border-color: #2ea043; color: #fff; }
     .nav-btn.active-slope { background: #d29922; border-color: #e3b341; color: #000; font-weight: 700; }
 
-    /* Brújula dinámica grande (120px) */
     .compass-card {
       position: absolute; top: 16px; right: 16px; z-index: 10;
       width: 120px; height: 120px;
@@ -41,7 +39,6 @@
     .compass-card:hover { border-color: #58a6ff; transform: scale(1.04); }
     .compass-svg { width: 80px; height: 80px; transform-origin: 50% 50%; will-change: transform; }
 
-    /* Paneles de resultados */
     .info-panel {
       position: absolute; top: 72px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.95); backdrop-filter: blur(8px);
@@ -76,7 +73,6 @@
 </head>
 <body>
 
-  <!-- Barra superior -->
   <div class="top-bar">
     <h1 id="projectTitle">CARGANDO...</h1>
     <button class="nav-btn" onclick="topView()">Planta (2D)</button>
@@ -86,7 +82,6 @@
     <button class="nav-btn" id="clearBtn" style="display: none;" onclick="clearAll()">Borrar</button>
   </div>
 
-  <!-- Brújula dinámica -->
   <div class="compass-card" id="compassBtn" title="Clic para orientar al Norte" onclick="orientToNorth()">
     <svg class="compass-svg" id="compassNeedle" viewBox="0 0 36 36">
       <text x="18" y="5.5" font-size="6" font-weight="900" fill="#f85149" text-anchor="middle">N</text>
@@ -96,7 +91,6 @@
     </svg>
   </div>
 
-  <!-- Panel 1: Medición Operativa -->
   <div class="info-panel panel-measure" id="panelMeasure">
     <h2>Medición 3D</h2>
     <div class="metric-row"><span>Distancia 3D:</span><span class="metric-val val-measure" id="mDist3D">-- m</span></div>
@@ -105,7 +99,6 @@
     <div class="metric-row"><span>Pendiente:</span><span class="metric-val val-measure" id="mSlope">-- %</span></div>
   </div>
 
-  <!-- Panel 2: Análisis de Talud -->
   <div class="info-panel panel-slope" id="panelSlope">
     <h2>Análisis de Talud</h2>
     <div class="metric-row"><span>Inclinación (Dip):</span><span class="metric-val val-slope" id="tDip">-- °</span></div>
@@ -115,12 +108,11 @@
     <div class="metric-row"><span>Distancia Real:</span><span class="metric-val val-slope" id="tDist3D">-- m</span></div>
   </div>
 
-  <!-- Coordenadas Métricas Locales en Tiempo Real -->
   <div class="coords-card">
     <div class="system-tag" id="zoneTag">SISTEMA LOCAL DE MINA</div>
     <div class="coords-row">
-      <div class="coord-item">X (Este): <span id="localX">--</span> m</div>
-      <div class="coord-item">Y (Norte): <span id="localY">--</span> m</div>
+      <div class="coord-item">Este (X): <span id="localX">--</span> m</div>
+      <div class="coord-item">Norte (Y): <span id="localY">--</span> m</div>
       <div class="coord-item">Cota Z: <span id="localZ">--</span> m</div>
     </div>
   </div>
@@ -129,7 +121,7 @@
 
   <script>
     // =========================================================================
-    // 1. CONFIGURACIÓN PRINCIPAL (SELECCIONA AQUÍ LA ZONA)
+    // 1. CONFIGURACIÓN PRINCIPAL
     // =========================================================================
     const CESIUM_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjlnWjh5WnZVbTRSZ2s5eGUiLCJqdGkiOiI0NzQyZDU1ZS1lNzcwLTQ1OTEtYmVkMS1hYWFkYzJjNTRjYzYiLCJpZCI6NDc3MzE0LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODgxOTYzMzR9.d7HeXTwGpKuVONPPBcghXZlISjckj1wtQnxBnAMTi9M";
 
@@ -137,20 +129,32 @@
     const ZONA_ACTIVA = "FILOS";
 
     // =========================================================================
-    // 2. CATÁLOGO DE ZONAS (CONFIGURA AQUÍ TUS ASSET IDS)
+    // 2. PARÁMETROS GEODÉSICOS VINCULADOS A MINEPLAN
     // =========================================================================
     const CONFIG_ZONAS = {
       "BERMEJAL_GUADALUPE": {
         nombre: "TAJO BERMEJAL - GUADALUPE",
-        assetId: 0000000 // Tu Asset ID numérico aquí
+        assetId: 0000000,
+        lat0: 17.8579401103632,
+        lon0: -99.6739536626923,
+        offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
+        scale: 1.0002526469530397
       },
       "FILOS": {
         nombre: "TAJO LOS FILOS",
-        assetId: 5837979 // Tu Asset ID numérico aquí
+        assetId: 5837979,
+        lat0: 17.8579401103632,
+        lon0: -99.6739536626923,
+        offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
+        scale: 1.0002526469530397
       },
       "PADS": {
         nombre: "PADS DE LIXIVIACIÓN",
-        assetId: 0000000 // Tu Asset ID numérico aquí
+        assetId: 0000000,
+        lat0: 17.8641030711538,
+        lon0: -99.6942028892308,
+        offset: [426491.06053362874, 1975081.382389519, 3.8771747150963165],
+        scale: 1.000261022361419
       }
     };
 
@@ -159,7 +163,6 @@
     document.getElementById('projectTitle').innerText = activeZone.nombre;
     document.getElementById('zoneTag').innerText = "SISTEMA LOCAL - " + activeZone.nombre;
 
-    // 1. INICIALIZACIÓN DE CESIUM
     Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
     const viewer = new Cesium.Viewer('cesiumContainer', {
@@ -174,7 +177,6 @@
       selectionIndicator: false
     });
 
-    // 2. ENTORNO AISLADO
     viewer.scene.globe.show = false;
     if (viewer.scene.skyAtmosphere) viewer.scene.skyAtmosphere.show = false;
     if (viewer.scene.skyBox) viewer.scene.skyBox.show = false;
@@ -184,7 +186,6 @@
 
     let currentTileset = null;
 
-    // 3. CARGA DE LA MALLA
     Cesium.Cesium3DTileset.fromIonAssetId(activeZone.assetId, {
       maximumScreenSpaceError: 2
     }).then(function(tileset) {
@@ -195,7 +196,6 @@
       console.log('Error al cargar la malla:', error);
     });
 
-    // 4. VISTAS DE CÁMARA
     function topView() {
       if (!currentTileset) return;
       viewer.zoomTo(currentTileset, new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-89.9), 0));
@@ -206,7 +206,6 @@
       viewer.zoomTo(currentTileset, new Cesium.HeadingPitchRange(Cesium.Math.toRadians(45), Cesium.Math.toRadians(-35), 0));
     }
 
-    // 5. BRÚJULA DINÁMICA
     const needle = document.getElementById('compassNeedle');
     viewer.scene.postRender.addEventListener(function() {
       const headingDeg = Cesium.Math.toDegrees(viewer.camera.heading);
@@ -222,25 +221,69 @@
       });
     }
 
-    // 6. LECTURA DIRECTA DE COORDENADAS LOCALES NATIVAS (SIN DOBLE TRANSFORMACIÓN)
+    // =========================================================================
+    // PROYECCIÓN DIRECTA HACIA LA CUADRÍCULA DE MINEPLAN
+    // =========================================================================
+    function getMinePlanCoordinates(cartographic, zone) {
+      const a = 6378137.0;
+      const f = 1 / 298.257223563;
+      const e2 = 2 * f - f * f;
+      const e_prime2 = e2 / (1 - e2);
+
+      const lat = cartographic.latitude;
+      const lon = cartographic.longitude;
+      const lat0 = Cesium.Math.toRadians(zone.lat0);
+      const lon0 = Cesium.Math.toRadians(zone.lon0);
+
+      const dLon = lon - lon0;
+      const sinLat = Math.sin(lat);
+      const cosLat = Math.cos(lat);
+      const tanLat = Math.tan(lat);
+
+      const N = a / Math.sqrt(1 - e2 * sinLat * sinLat);
+      const T = tanLat * tanLat;
+      const C = e_prime2 * cosLat * cosLat;
+      const A = cosLat * dLon;
+
+      const m0 = 1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * Math.pow(e2, 3) / 256;
+      const m1 = 3 * e2 / 8 + 3 * e2 * e2 / 32 + 45 * Math.pow(e2, 3) / 1024;
+      const m2 = 15 * e2 * e2 / 256 + 45 * Math.pow(e2, 3) / 1024;
+      const m3 = 35 * Math.pow(e2, 3) / 3072;
+
+      const M = a * (m0 * lat - m1 * Math.sin(2 * lat) + m2 * Math.sin(4 * lat) - m3 * Math.sin(6 * lat));
+      const M0 = a * (m0 * lat0 - m1 * Math.sin(2 * lat0) + m2 * Math.sin(4 * lat0) - m3 * Math.sin(6 * lat0));
+
+      const xTM = N * (A + (1 - T + C) * Math.pow(A, 3) / 6);
+      const yTM = (M - M0) + N * tanLat * (A * A / 2 + (5 - T + 9 * C) * Math.pow(A, 4) / 24);
+
+      // Aplicar factor de escala y traslación directa al marco local de mina
+      const localEasting = zone.scale * xTM + zone.offset[0];
+      const localNorthing = zone.scale * yTM + zone.offset[1];
+      const localElevation = cartographic.height;
+
+      return {
+        e: localEasting.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        n: localNorthing.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        z: localElevation.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      };
+    }
+
     const coordsHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     coordsHandler.setInputAction(function(movement) {
-      if (!currentTileset) return;
-
       const pickedPosition = viewer.scene.pickPosition(movement.endPosition);
       if (Cesium.defined(pickedPosition)) {
-        // Extrae las coordenadas locales directamente de la matriz de la malla de Terra
-        const transform = currentTileset.root.transform;
-        const invTransform = Cesium.Matrix4.inverse(transform, new Cesium.Matrix4());
-        const localPos = Cesium.Matrix4.multiplyByPoint(invTransform, pickedPosition, new Cesium.Cartesian3());
+        const cartographic = Cesium.Cartographic.fromCartesian(pickedPosition);
+        const coords = getMinePlanCoordinates(cartographic, activeZone);
 
-        document.getElementById('localX').innerText = localPos.x.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('localY').innerText = localPos.y.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('localZ').innerText = localPos.z.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('localX').innerText = coords.e;
+        document.getElementById('localY').innerText = coords.n;
+        document.getElementById('localZ').innerText = coords.z;
       }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
-    // 7. HERRAMIENTAS INDEPENDIENTES (MEDICIÓN Y ANÁLISIS DE TALUD)
+    // =========================================================================
+    // HERRAMIENTAS DE MEDICIÓN Y TALUD
+    // =========================================================================
     let currentMode = null;
     let toolPoints = [];
     let toolEntities = [];
