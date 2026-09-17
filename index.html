@@ -2,22 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- Control de escala obligatoria para dispositivos móviles -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Visor Topográfico 3D</title>
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body, #cesiumContainer {
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #121519; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-
-    /* Barra de herramientas superior */
     .top-bar {
       position: absolute; top: 16px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.90); backdrop-filter: blur(8px);
@@ -40,7 +33,6 @@
     .nav-btn-camera { background: rgba(88, 166, 255, 0.18); border-color: #58a6ff; color: #58a6ff; }
     .nav-btn-camera:hover { background: #1f6feb; color: #fff; }
 
-    /* Brújula dinámica */
     .compass-card {
       position: absolute; top: 16px; right: 16px; z-index: 10;
       width: 110px; height: 110px;
@@ -53,7 +45,6 @@
     .compass-card:hover { border-color: #58a6ff; transform: scale(1.04); }
     .compass-svg { width: 75px; height: 75px; transform-origin: 50% 50%; will-change: transform; }
 
-    /* Paneles de datos */
     .info-panel {
       position: absolute; top: 72px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.95); backdrop-filter: blur(8px);
@@ -69,7 +60,6 @@
     .val-measure { color: #7ee787; }
     .val-slope { color: #f0883e; }
 
-    /* Panel de coordenadas en vivo */
     .coords-card {
       position: absolute; bottom: 20px; left: 16px; z-index: 10;
       background: rgba(18, 21, 25, 0.90); backdrop-filter: blur(8px);
@@ -85,45 +75,20 @@
     .coords-row { display: flex; gap: 18px; }
     .coord-item span { color: #7ee787; font-weight: bold; }
 
-    /* =========================================================================
-       OPTIMIZACIONES PARA TELÉFONOS Y TABLETS (MEDIA QUERIES)
-       ========================================================================= */
     @media (max-width: 768px) {
       .top-bar {
         top: 10px; left: 10px; right: 10px;
-        padding: 8px 10px;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
+        padding: 8px 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;
       }
-      .top-bar h1 {
-        font-size: 13px;
-        padding-right: 4px;
-      }
-      .nav-btn {
-        padding: 9px 13px;
-        font-size: 13px;
-        min-height: 42px; /* Tamaño táctil ergonómico para pulgar */
-      }
+      .top-bar h1 { font-size: 13px; padding-right: 4px; }
+      .nav-btn { padding: 9px 13px; font-size: 13px; min-height: 42px; }
       .compass-card {
-        width: 75px; height: 75px;
-        top: auto; bottom: 85px; right: 12px; /* Pasa a la esquina inferior derecha */
+        width: 75px; height: 75px; top: auto; bottom: 85px; right: 12px;
       }
       .compass-svg { width: 50px; height: 50px; }
-      .coords-card {
-        bottom: 10px; left: 10px; right: 10px;
-        padding: 8px 12px;
-        font-size: 11px;
-      }
-      .coords-row {
-        gap: 8px;
-        justify-content: space-between;
-      }
-      .info-panel {
-        top: 68px; left: 10px; right: 10px;
-        min-width: unset;
-        font-size: 13px;
-      }
+      .coords-card { bottom: 10px; left: 10px; right: 10px; padding: 8px 12px; font-size: 11px; }
+      .coords-row { gap: 8px; justify-content: space-between; }
+      .info-panel { top: 68px; left: 10px; right: 10px; min-width: unset; font-size: 13px; }
     }
   </style>
 </head>
@@ -180,10 +145,10 @@
 
   <script>
     // =========================================================================
-    // 1. CONFIGURACIÓN DEL REPOSITORIO
+    // 1. CONFIGURACIÓN DEL REPOSITORIO (AJUSTA AQUÍ TU ZONA Y TU TOKEN)
     // =========================================================================
     const CESIUM_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjlnWjh5WnZVbTRSZ2s5eGUiLCJqdGkiOiI0NzQyZDU1ZS1lNzcwLTQ1OTEtYmVkMS1hYWFkYzJjNTRjYzYiLCJpZCI6NDc3MzE0LCJpc3MiOiJodHRwczovL2FwaS5jZXNpdW0uY29tIiwiYXVkIjoidW5kZWZpbmVkX2RlZmF1bHQiLCJpYXQiOjE3ODgxOTYzMzR9.d7HeXTwGpKuVONPPBcghXZlISjckj1wtQnxBnAMTi9M";
-    const ZONA_ACTIVA = "FILOS"; // "BERMEJAL_GUADALUPE" | "FILOS" | "PADS"
+    const ZONA_ACTIVA = "FILOS"; // Alterna entre: "FILOS" | "BERMEJAL_GUADALUPE" | "PADS"
 
     const CONFIG_ZONAS = {
       "BERMEJAL_GUADALUPE": {
@@ -197,7 +162,7 @@
       },
       "FILOS": {
         nombre: "TAJO LOS FILOS",
-        assetId: 5837979, // Pon aquí tu Asset ID
+        assetId: 5890482,
         lat0: 17.8579401103632,
         lon0: -99.6739536626923,
         offset: [428637.51373973046, 1974398.0838580697, 3.8437755266563727],
@@ -222,13 +187,8 @@
 
     Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
 
-    // Inicialización habilitando preservación de buffer para captura limpia en HD
     const viewer = new Cesium.Viewer('cesiumContainer', {
-      contextOptions: {
-        webgl: {
-          preserveDrawingBuffer: true
-        }
-      },
+      contextOptions: { webgl: { preserveDrawingBuffer: true } },
       timeline: false, animation: false, baseLayerPicker: false,
       geocoder: false, homeButton: false, sceneModePicker: false,
       navigationHelpButton: false, infoBox: false, selectionIndicator: false
@@ -320,16 +280,13 @@
       const localElevation = s * (-r[1] * xTM + r[0] * yTM + zTM) + off[2];
 
       return {
-        rawE: localEasting,
-        rawN: localNorthing,
-        rawZ: localElevation,
+        rawE: localEasting, rawN: localNorthing, rawZ: localElevation,
         e: localEasting.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         n: localNorthing.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         z: localElevation.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       };
     }
 
-    // Inspección de coordenadas (Cursor o Toque en pantalla táctil)
     const coordsHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     function updateCoordsAtPosition(position) {
       const pickedPosition = viewer.scene.pickPosition(position);
@@ -355,17 +312,11 @@
       try {
         const data = localStorage.getItem(STORAGE_KEY);
         return data ? JSON.parse(data) : [];
-      } catch(e) {
-        return [];
-      }
+      } catch(e) { return []; }
     }
 
     function saveHistory(list) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      } catch(e) {
-        console.error("No se pudo guardar en almacenamiento local", e);
-      }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(e) {}
       updateHistoryBadge();
     }
 
@@ -381,7 +332,6 @@
         clearActiveMeasurement();
       }
     }
-
     updateHistoryBadge();
 
     // =========================================================================
@@ -434,7 +384,6 @@
 
     toolHandler.setInputAction(function(click) {
       if (!currentMode) {
-        // En móviles, un toque sin herramienta activa actualiza la coordenada inferior
         updateCoordsAtPosition(click.position);
         return;
       }
@@ -597,41 +546,18 @@
       }
 
       const headers = [
-        "ID",
-        "Fecha_Hora",
-        "Zona",
-        "Tipo_Analisis",
-        "P1_Este_X",
-        "P1_Norte_Y",
-        "P1_Cota_Z",
-        "P2_Este_X",
-        "P2_Norte_Y",
-        "P2_Cota_Z",
-        "Distancia_3D_m",
-        "Distancia_Horiz_m",
-        "Desnivel_DeltaZ_m",
-        "Pendiente_Pct",
-        "Inclinacion_Dip_Deg",
-        "Direccion_Azimut_Deg"
+        "ID", "Fecha_Hora", "Zona", "Tipo_Analisis",
+        "P1_Este_X", "P1_Norte_Y", "P1_Cota_Z",
+        "P2_Este_X", "P2_Norte_Y", "P2_Cota_Z",
+        "Distancia_3D_m", "Distancia_Horiz_m", "Desnivel_DeltaZ_m",
+        "Pendiente_Pct", "Inclinacion_Dip_Deg", "Direccion_Azimut_Deg"
       ];
 
       const rows = list.map((item, idx) => [
-        idx + 1,
-        `"${item.timestamp}"`,
-        `"${item.zone}"`,
-        `"${item.type}"`,
-        item.p1_e,
-        item.p1_n,
-        item.p1_z,
-        item.p2_e,
-        item.p2_n,
-        item.p2_z,
-        item.dist3D,
-        item.distH,
-        item.deltaZ,
-        item.slope,
-        item.dip,
-        item.azimuth
+        idx + 1, `"${item.timestamp}"`, `"${item.zone}"`, `"${item.type}"`,
+        item.p1_e, item.p1_n, item.p1_z,
+        item.p2_e, item.p2_n, item.p2_z,
+        item.dist3D, item.distH, item.deltaZ, item.slope, item.dip, item.azimuth
       ]);
 
       const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
